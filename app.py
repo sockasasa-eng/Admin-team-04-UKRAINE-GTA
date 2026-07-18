@@ -11,7 +11,7 @@ api_key = st.secrets["GEMINI_API_KEY"]
 admin_password = st.secrets["ADMIN_PASSWORD"]
 
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
