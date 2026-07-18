@@ -18,7 +18,7 @@ try:
 except FileNotFoundError:
     full_rules = "Правила не завантажені."
 
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-1.0-pro-latest')
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
