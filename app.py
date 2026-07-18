@@ -9,14 +9,8 @@ if "GEMINI_API_KEY" not in st.secrets or "ADMIN_PASSWORD" not in st.secrets:
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-# ФУНКЦІЯ АВТОМАТИЧНОГО ПОШУКУ МОДЕЛІ
-def get_best_model():
-    models = genai.list_models()
-    for m in models:
-        # Шукаємо першу модель, яка підтримує генерацію контенту
-        if 'generateContent' in m.supported_generation_methods:
-            return genai.GenerativeModel(m.name)
-    return None
+# ВИКОРИСТОВУЄМО ТІЛЬКИ ЦЮ ВЕРСІЮ, ВОНА НАЙСТАБІЛЬНІША
+model = genai.GenerativeModel('gemini-1.5-flash-002')
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -30,13 +24,6 @@ if not st.session_state.authenticated:
 else:
     st.title("Адмін-панель UKRAINE GTA")
     
-    # Ініціалізація моделі
-    model = get_best_model()
-    
-    if not model:
-        st.error("ШІ не знайдено моделей, доступних для вашого ключа.")
-        st.stop()
-
     if prompt := st.chat_input("Питання:"):
         with st.chat_message("user"):
             st.markdown(prompt)
