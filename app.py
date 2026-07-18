@@ -1,17 +1,67 @@
 import streamlit as st
 import google.generativeai as genai
 
-st.set_page_config(page_title="Адмін-панель", page_icon="⚖️")
+# Налаштування сторінки
+st.set_page_config(page_title="Адмін-панель", page_icon="⚖️", layout="wide")
 
+# CSS для стилізації під форум UKRAINE GTA
+st.markdown("""
+    <style>
+    /* Підключення шрифту e-Ukraine (завантажується через імпорт) */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    /* Фонові кольори форуму */
+    .stApp {
+        background-color: #151515;
+        color: #e0e0e0;
+    }
+
+    /* Панелі та блоки (імітація блоків форуму) */
+    .stChatMessage {
+        background-color: #1e1e1e !important;
+        border-radius: 5px;
+        border: 1px solid #333;
+    }
+
+    /* Кнопки в стилі "Створити тему" (оранжева) */
+    div.stButton > button {
+        background-color: #f77f00 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 3px !important;
+        font-weight: bold !important;
+    }
+
+    /* Заголовок в стилі форуму */
+    h1 {
+        color: #ffffff;
+        font-size: 24px;
+        border-bottom: 2px solid #f77f00;
+        padding-bottom: 10px;
+    }
+    
+    /* Input поля */
+    .stTextInput > div > div > input {
+        background-color: #1e1e1e;
+        color: white;
+        border: 1px solid #333;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Перевірка наявності ключів
 if "GEMINI_API_KEY" not in st.secrets or "ADMIN_PASSWORD" not in st.secrets:
-    st.error("Помилка: не знайдено ключі!")
+    st.error("Помилка: не знайдено ключі в Secrets!")
     st.stop()
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-# ТУТ ВСТАВ СВОЇ ПРАВИЛА
-game_rules = """
-/vuninvite - доступна з віп-статусом, команда для звільнення із фракції;
+# Правила
+game_rules = "/vuninvite - доступна з віп-статусом, команда для звільнення із фракції;
 /skiptutorial - пропустити навчальні квестові завдання;
 /mytime - відіграний час за весь час гри на сервері;
 /time - показує точний час на сервері;
@@ -2189,29 +2239,15 @@ CaptKing - король територій цього сезону
 Примітка: незначні відхилення не враховуються.
 2.9. "Ухід від перестрілки" - Заборонено виходити з Червоної зони у звичайну зону під час перестрілки. | Деморган 30 хвилин
 2.10. Заборонено порушувати правила за межами дозволеного часу. | Покарання відповідно до нормативів
-
-"""
-
-# Інструкція для ШІ з використанням твоїх правил
-system_instruction = f"""
-Ти - офіційний адміністратор проєкту UKRAINE GTA. 
-Твоя база знань - це виключно ці правила:
-{game_rules}
-
-Відповідай гравцям, спираючись ТІЛЬКИ на ці правила. 
-Якщо питання не стосується гри або правил - ввічливо відмовся. 
-Не обговорюй політику, війну та реальне життя. Будь лаконічним.
-"""
-
-model = genai.GenerativeModel(
-    model_name='models/gemini-flash-latest', # Використовуємо стабільну модель
-    system_instruction=system_instruction
+"
 )
 
+# Авторизація
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
+    st.title("Вхід в адмін-панель")
     password = st.text_input("Пароль:", type="password")
     if st.button("Увійти"):
         if password == st.secrets["ADMIN_PASSWORD"]:
@@ -2219,6 +2255,7 @@ if not st.session_state.authenticated:
             st.rerun()
     st.stop()
 
+# Чат-інтерфейс
 st.title("Адмін-панель UKRAINE GTA")
 
 if "messages" not in st.session_state:
@@ -2228,14 +2265,13 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Питання:"):
+if prompt := st.chat_input("Напишіть повідомлення адміну..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         try:
-            # Бот тепер "бачить" правила в кожному запиті
             response = model.generate_content(prompt)
             st.markdown(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
