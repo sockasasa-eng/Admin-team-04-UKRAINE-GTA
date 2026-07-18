@@ -1,19 +1,17 @@
 import streamlit as st
 import google.generativeai as genai
 
-# Налаштування сторінки
 st.set_page_config(page_title="Адмін-бот", page_icon="⚖️")
 
-# Перевірка ключів
 if "GEMINI_API_KEY" not in st.secrets or "ADMIN_PASSWORD" not in st.secrets:
     st.error("Помилка: не знайдено GEMINI_API_KEY або ADMIN_PASSWORD у налаштуваннях Secrets!")
     st.stop()
 
-# Підключення до Google Gemini
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel('gemini-1.5-flash')
 
-# Логіка авторизації
+# Використовуємо іншу модель з префіксом models/
+model = genai.GenerativeModel('models/gemini-1.5-pro')
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -28,7 +26,6 @@ if not st.session_state.authenticated:
 else:
     st.title("Адмін-панель UKRAINE GTA")
     
-    # Чат
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -43,6 +40,7 @@ else:
 
         with st.chat_message("assistant"):
             try:
+                # Використовуємо generate_content
                 response = model.generate_content(prompt)
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
