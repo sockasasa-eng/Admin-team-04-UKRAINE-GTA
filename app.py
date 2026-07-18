@@ -1,24 +1,38 @@
 import streamlit as st
 import google.generativeai as genai
 
-st.set_page_config(page_title="Адмін-бот", page_icon="⚖️")
+# Налаштування сторінки
+st.set_page_config(page_title="Адмін-панель", page_icon="⚖️")
 
-# Перевірка наявності секретів
+# Перевірка наявності ключів
 if "GEMINI_API_KEY" not in st.secrets or "ADMIN_PASSWORD" not in st.secrets:
-    st.error("Помилка: не знайдено GEMINI_API_KEY або ADMIN_PASSWORD у Secrets!")
+    st.error("Помилка: не знайдено ключі в Secrets!")
     st.stop()
 
-# Налаштування API
+# Підключення до API
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-# Використовуємо стабільну модель з твого списку
-model = genai.GenerativeModel('models/gemini-3.5-flash')
+# Системна інструкція - вона змушує бота бути адміном гри
+system_instruction = """
+Ти - офіційний адміністратор проєкту UKRAINE GTA. 
+Твоя задача - допомагати гравцям та відповідати на питання, що стосуються виключно гри UKRAINE GTA. 
+Якщо питання не стосується гри, ввічливо відмовся відповідати. 
+Не обговорюй політику, війну або інші теми, що не пов'язані з грою. 
+Пиши чітко, коротко і зрозуміло.
+"""
+
+# Використання моделі з системною інструкцією для швидкості та фокусу
+model = genai.GenerativeModel(
+    model_name='models/gemini-2.0-flash',
+    system_instruction=system_instruction
+)
 
 # Логіка авторизації
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
+    st.title("Вхід в адмін-панель")
     password = st.text_input("Введіть пароль:", type="password")
     if st.button("Увійти"):
         if password == st.secrets["ADMIN_PASSWORD"]:
@@ -26,27 +40,31 @@ if not st.session_state.authenticated:
             st.rerun()
         else:
             st.error("Невірний пароль!")
-else:
-    st.title("Адмін-панель UKRAINE GTA")
-    
-    # Історія чату
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    st.stop()
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+# Чат-інтерфейс
+st.title("Адмін-панель UKRAINE GTA")
 
-    # Ввід повідомлень
-    if prompt := st.chat_input("Питання до адміна:"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-        with st.chat_message("assistant"):
-            try:
-                response = model.generate_content(prompt)
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+if prompt := st.chat_input("Питання до адміна:"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant"):
+        try:
+            # Генерація відповіді
+            response = model.generate_content(prompt)
+            if response.text:
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
-            except Exception as e:
-                st.error(f"Помилка ШІ: {e}")
+            else:
+                st.warning("Адмін мовчить...")
+        except Exception as e:
+            st.error(f"Помилка ШІ: {e}")
